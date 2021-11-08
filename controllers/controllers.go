@@ -10,8 +10,8 @@ import (
 	"crypto/rand"
 	"encoding/json"
 
-	"github.com/Javlon2000/Verification-using-Redis-database/models"
-	"github.com/Javlon2000/Verification-using-Redis-database/utils"
+	"github.com/Javlon2000/Redis/models"
+	"github.com/Javlon2000/Redis/utils"
 
 	"github.com/go-redis/redis"
 )
@@ -24,7 +24,7 @@ type SignUPInput struct {
 
 var client = redis.NewClient(&redis.Options{
 	Addr: "localhost:6379",
-	Password: "",
+	Password: "foobared",
 	DB: 0,
 })
 
@@ -91,7 +91,7 @@ func Redis(key string, value []uint8) {
 
 	log.Println(pong)
 
-	err = client.Set(strings.ToLower(key), value, 1 * time.Hour).Err()
+	_, err = client.SetNX(strings.ToLower(key), value, 1 * time.Hour).Result()
 
 	if err != nil {
 		log.Fatalf("Cannot inserting into to the Redis: %v", err)
@@ -124,11 +124,10 @@ func Verify(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte("Username was not found!"))
+		return
 	}
 
 	var check SignUPInput
-
-	var isFound bool
 
 	err = json.Unmarshal([]byte(values), &check)
 
@@ -136,48 +135,25 @@ func Verify(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Cannot get the data from the Redis: %v", err)
 	}
 
-	// getUser := models.Check{}
-
-
-
-	if input.Password == check.Password{
+	if input.Password == check.Password {
 
 		user := models.InsertDatabase { Username: check.Username, Email: check.Email, Password: check.Password }
 
-		db.Table("users").Create(&user)
-		w.Write([]byte("Verified!"))
+			result := db.Table("users").Create(&user)
 
-		isFound = true
-		
+			if result.RowsAffected == 0 {
+
+				w.WriteHeader(http.StatusForbidden)
+				w.Write([]byte("Already exists!"))
+
+			} else{
+
+				w.Write([]byte("Verified!"))
+			}
+
+	} else {
+
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte("Password was wrong!"))
 	}
-	// row := db.Table("users").Select("username").Where("username = ?", check.Username).Find(&getUser)
- 
-	encoder := json.NewEncoder(w)
-
-	var getUser models.User
-
-	w.Header().Set("Content-Type", "application/json")
-
-	if isFound {
-		_ = db.Where("username = ?", check.Username).First(&getUser)
-
-		encoder.Encode(getUser)
-
-	}else{
-		w.Write([]byte("Username or Password wrong!"))
-	}
-
-	// } else {
-
-	// 	w.WriteHeader(http.StatusForbidden)
-	// 	w.Write([]byte("Username or email already exits!"))
-
-	// }
-
-	// } else {
-
-	// 	w.WriteHeader(http.StatusUnauthorized)
-	// 	w.Write([]byte("Password was wrong!"))
-	// }
-
 }
