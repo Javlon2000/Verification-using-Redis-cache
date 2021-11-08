@@ -7,3 +7,5 @@ create table users (
 	password varchar(60) not null,
 	created_at timestamp with time zone default current_timestamp
 );
+
+CREATE UNIQUE INDEX gmail ON users(email);
