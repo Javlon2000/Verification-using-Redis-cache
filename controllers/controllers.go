@@ -24,7 +24,7 @@ type SignUPInput struct {
 
 var client = redis.NewClient(&redis.Options{
 	Addr: "localhost:6379",
-	Password: "foobared",
+	Password: "",
 	DB: 0,
 })
 
