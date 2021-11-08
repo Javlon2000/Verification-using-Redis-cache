@@ -45,7 +45,7 @@ func SignUP(w http.ResponseWriter, r *http.Request) {
 	message := []byte(randomNumber.String())
 
 	Sender := "goguruh01@gmail.com"
-	Password := "Qwertyu!op"
+	Password := ""
 
 	receivers := []string {
 		input.Email,
